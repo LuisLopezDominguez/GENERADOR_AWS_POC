@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Button, Paper, TextField, Box, CircularProgress, Divider } from '@mui/material';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SendIcon from '@mui/icons-material/Send';
 
 const GeneratedContent = ({ data, onBack }) => {
-    const [title, setTitle] = useState('');
+    const [title, setTitle] = useState('Contenido generado');
     const [content, setContent] = useState('');
     const [copied, setCopied] = useState(false);
     const [selectedNetwork, setSelectedNetwork] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
-    // Redes sociales disponibles
     const socialNetworks = [
         { name: 'LinkedIn', color: '#0077B5' },
         { name: 'Facebook', color: '#1877F2' },
@@ -18,108 +24,54 @@ const GeneratedContent = ({ data, onBack }) => {
 
     useEffect(() => {
         if (data) {
-            // Procesamiento breve para mostrar los datos
             setTimeout(() => {
                 try {
-                    // Procesar datos de Web Scraping
-                    if (data.scraped_content && data.scraped_content.length > 0) {
-                        // Usar el título del primer sitio, si está disponible
-                        let generatedTitle = "";
-                        for (const page of data.scraped_content) {
-                            if (page.title && page.title.trim()) {
-                                generatedTitle = page.title;
-                                break;
-                            }
-                        }
+                    const tipo = data.contentType?.toUpperCase();
 
-                        // Si no hay título, usar uno predeterminado
-                        if (!generatedTitle) {
-                            generatedTitle = getTitleByContentType(data.contentType);
-                        }
-
-                        // Generar contenido combinado de los sitios
-                        let generatedContent = "";
-                        data.scraped_content.forEach((sitio) => {
-                            if (sitio.main_text && sitio.main_text.trim()) {
-                                const domain = extractDomain(sitio.url);
-                                generatedContent += `📄 De ${domain}:\n\n`;
-                                generatedContent += sitio.main_text.substring(0, 500) + "...\n\n";
-                            }
-                        });
-
-                        // Añadir fuentes
-                        generatedContent += "\nFuentes: " + data.scraped_content
-                            .map(s => s.url || "URL")
-                            .join(", ");
-
-                        setTitle(generatedTitle);
-                        setContent(generatedContent);
+                    if (tipo === 'AUDIO' && data.podcast) {
+                        setTitle("Podcast generado");
+                        setContent(data.podcast.podcast_text || '');
                     }
-                    // Procesar datos de OCR
-                    else if (data.extracted_text) {
-                        // Título basado en el nombre del archivo
-                        const fileTitle = data.source_file
-                            ? `Contenido extraído de "${data.source_file}"`
-                            : getTitleByContentType(data.contentType);
 
-                        // Procesar el texto extraído
-                        let formattedText = data.extracted_text;
-
-                        // Adaptar el contenido según el tipo seleccionado
-                        let finalContent = formattedText;
-
-                        // Para artículos, añadir un poco de contexto
-                        if (data.contentType === 'ARTICULO') {
-                            finalContent = `A continuación se presenta un artículo basado en el texto extraído:\n\n${formattedText}`;
-                        }
-
-                        setTitle(fileTitle);
-                        setContent(finalContent);
+                    // TODO: Lógica futura para tipo IMAGEN
+                    else if (tipo === 'IMAGEN') {
+                        setTitle("Imagen generada");
+                        setContent("⚠️ Aún no se ha implementado la lógica para mostrar imágenes generadas.");
                     }
-                    // Caso por defecto
+
+                    // TODO: Lógica futura para tipo FLYER
+                    else if (tipo === 'FLYER') {
+                        setTitle("Flyer generado");
+                        setContent("⚠️ Aún no se ha implementado la lógica para mostrar flyers generados.");
+                    }
+
+                    // TODO: Lógica futura para tipo PUBLICACION
+                    else if (tipo === 'PUBLICACION') {
+                        setTitle("Publicación generada");
+                        setContent("⚠️ Aún no se ha implementado la lógica para mostrar publicaciones.");
+                    }
+
+                    // TODO: Lógica futura para tipo ARTICULO
+                    else if (tipo === 'ARTICULO') {
+                        setTitle("Artículo generado");
+                        setContent("⚠️ Aún no se ha implementado la lógica para mostrar artículos generados.");
+                    }
+
+                    // Si no se reconoce el tipo o faltan datos
                     else {
-                        setTitle(getTitleByContentType(data.contentType));
-                        setContent("No se pudo extraer contenido. Por favor, edita este texto manualmente.");
+                        setTitle("Contenido generado");
+                        setContent("No se pudo interpretar correctamente el contenido generado.");
                     }
-                } catch (error) {
-                    console.error("Error al procesar datos:", error);
-                    setTitle("Error al procesar datos");
-                    setContent("Hubo un error al procesar el contenido extraído.");
+                } catch (e) {
+                    console.error("Error al procesar el contenido:", e);
+                    setTitle("Error");
+                    setContent("Hubo un error al procesar el contenido.");
                 } finally {
                     setIsLoading(false);
                 }
-            }, 500);
-        } else {
-            setTitle("No hay datos disponibles");
-            setContent("No se ha podido generar contenido porque no se recibieron datos.");
-            setIsLoading(false);
+            }, 400);
         }
     }, [data]);
-
-    // Función para obtener un título según el tipo de contenido
-    const getTitleByContentType = (contentType) => {
-        switch (contentType) {
-            case 'IMAGEN':
-                return "Nueva imagen para redes sociales";
-            case 'FLYER':
-                return "Flyer promocional";
-            case 'AUDIO':
-                return "Audio para compartir";
-            case 'ARTICULO':
-                return "Artículo de interés";
-            default:
-                return "Contenido para publicación";
-        }
-    };
-
-    // Función para extraer el dominio de una URL
-    const extractDomain = (url) => {
-        try {
-            return new URL(url).hostname;
-        } catch (e) {
-            return url;
-        }
-    };
 
     const handleCopy = () => {
         const textToCopy = `${title}\n\n${content}`;
@@ -133,21 +85,27 @@ const GeneratedContent = ({ data, onBack }) => {
         setSelectedNetwork(network);
     };
 
+    // Function to get the appropriate icon for each social network
+    const getSocialNetworkicon = (network) => {
+        switch (network) {
+            case 'LinkedIn':
+                return <LinkedInIcon />;
+            case 'Facebook':
+                return <FacebookIcon />;
+            case 'Twitter':
+                return <TwitterIcon />;
+            case 'Instagram':
+                return <InstagramIcon />;
+            default:
+                return null;
+        }
+    };
+
     if (isLoading) {
         return (
-            <Paper elevation={3} sx={{
-                padding: '2rem',
-                margin: '2rem',
-                width: '100%',
-                backgroundColor: '#fff',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '300px'
-            }}>
-                <CircularProgress color="primary" />
-                <Typography variant="h6" sx={{ mt: 2 }}>
+            <Paper elevation={3} sx={{ padding: '2rem', margin: '2rem', width: '100%', textAlign: 'center' }}>
+                <CircularProgress />
+                <Typography variant="body1" sx={{ marginTop: '1rem' }}>
                     Generando contenido...
                 </Typography>
             </Paper>
@@ -155,20 +113,13 @@ const GeneratedContent = ({ data, onBack }) => {
     }
 
     return (
-        <Paper elevation={3} sx={{
-            padding: '2rem',
-            margin: '2rem',
-            width: '100%',
-            backgroundColor: '#fff'
-        }}>
-            <Typography variant="h4" gutterBottom>
-                Contenido Generado
-            </Typography>
+        <Paper elevation={3} sx={{ padding: '2rem', margin: '2rem', width: '100%', backgroundColor: '#fff' }}>
+            <Typography variant="h4" gutterBottom>Contenido Generado</Typography>
+
+            <Divider sx={{ my: 2 }} />
 
             <Box sx={{ mb: 3 }}>
-                <Typography variant="body1" gutterBottom>
-                    Selecciona una red social
-                </Typography>
+                <Typography variant="body1" gutterBottom>Selecciona una red social</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                     {socialNetworks.map((network) => (
                         <Button
@@ -185,6 +136,9 @@ const GeneratedContent = ({ data, onBack }) => {
                                 }
                             }}
                             onClick={() => handleNetworkSelect(network.name)}
+                            startIcon={
+                                getSocialNetworkicon(network.name)
+                            }
                         >
                             {network.name}
                         </Button>
@@ -192,12 +146,10 @@ const GeneratedContent = ({ data, onBack }) => {
                 </Box>
             </Box>
 
-            <Divider sx={{ my: 2 }} />
+
 
             <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Título
-                </Typography>
+                <Typography variant="h6" gutterBottom>Título</Typography>
                 <TextField
                     variant="outlined"
                     fullWidth
@@ -208,14 +160,13 @@ const GeneratedContent = ({ data, onBack }) => {
 
             <Box sx={{ mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="h6">
-                        Contenido de la publicación
-                    </Typography>
+                    <Typography variant="h6">Contenido generado</Typography>
                     <Button
                         variant="outlined"
                         size="small"
                         onClick={handleCopy}
                         color={copied ? "success" : "primary"}
+                        startIcon={<ContentCopyIcon />}
                     >
                         {copied ? "¡Copiado!" : "Copiar"}
                     </Button>
@@ -230,20 +181,32 @@ const GeneratedContent = ({ data, onBack }) => {
                 />
             </Box>
 
+            {data.contentType?.toUpperCase() === 'AUDIO' && data.podcast?.podcast_url && (
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>Reproductor de Podcast</Typography>
+                    <audio controls src={data.podcast.podcast_url} style={{ width: '100%' }} />
+                    <Button
+                        sx={{ mt: 1 }}
+                        variant="outlined"
+                        href={data.podcast.podcast_url}
+                        download="podcast.mp3"
+                    >
+                        Descargar MP3
+                    </Button>
+                </Box>
+            )}
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                <Button
-                    variant="outlined"
-                    onClick={onBack}
-                >
-                    Volver
-                </Button>
-                <Button
-                    variant="contained"
+                <Button variant="outlined" onClick={onBack} startIcon={<ArrowBackIcon />}>Volver</Button>
+                <Button variant="contained"
+                    /*
                     sx={{
                         backgroundColor: '#ff9800',
                         color: '#fff',
                         '&:hover': { backgroundColor: '#e65100' }
                     }}
+                    */
+                    endIcon={<SendIcon />}
                 >
                     Publicar
                 </Button>

@@ -1,22 +1,69 @@
 import React, { useState } from 'react';
-import { Typography, Button, TextField, Chip, Box } from '@mui/material';
+import {
+    Typography,
+    Button,
+    TextField,
+    Chip,
+    Box,
+    Tabs,
+    Tab,
+    Paper,
+    Alert
+} from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import LinkIcon from '@mui/icons-material/Link';
+import CloseIcon from '@mui/icons-material/Close';
 
 const FileUploader = ({ onFileChange, onUrlChange }) => {
+    const [tabValue, setTabValue] = useState(0);
     const [url, setUrl] = useState('');
     const [urls, setUrls] = useState([]);
     const [selectedFile, setSelectedFile] = useState(null);
     const [error, setError] = useState('');
+    const [fileError, setFileError] = useState('');
+
+    // Allowed file types
+    const allowedFileTypes = [
+        'application/pdf',                                      // PDF
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+        'text/plain',                                           // TXT
+        'image/png',                                            // PNG
+        'image/jpeg'                                            // JPG/JPEG
+    ];
+
+    // File extensions for the accept attribute
+    const acceptedFileExtensions = '.pdf,.docx,.txt,.png,.jpg,.jpeg';
+
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
+        setFileError('');
+
+        // Clear previous selections when switching tabs
+        if (newValue === 0) {
+            setUrls([]);
+            if (onUrlChange) onUrlChange([]);
+        } else {
+            setSelectedFile(null);
+            onFileChange(null);
+        }
+    };
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            onFileChange(file);
+        if (!file) return;
 
-            // Al seleccionar un archivo, limpiamos las URLs
-            setUrls([]);
-            if (onUrlChange) onUrlChange([]);
+        // Validate file type
+        if (!allowedFileTypes.includes(file.type)) {
+            setFileError(`Tipo de archivo no permitido. Solo se admiten: PDF, DOCX, TXT, PNG, JPG`);
+            setSelectedFile(null);
+            onFileChange(null);
+            return;
         }
+
+        // File is valid
+        setFileError('');
+        setSelectedFile(file);
+        onFileChange(file);
     };
 
     const handleUrlChange = (event) => {
@@ -54,10 +101,6 @@ const FileUploader = ({ onFileChange, onUrlChange }) => {
         setUrl('');
         setError('');
 
-        // Al añadir URLs, limpiamos el archivo seleccionado
-        setSelectedFile(null);
-        onFileChange(null);
-
         // Notificar al componente padre
         if (onUrlChange) onUrlChange(newUrls);
     };
@@ -78,98 +121,135 @@ const FileUploader = ({ onFileChange, onUrlChange }) => {
     };
 
     return (
-        <div style={{ marginBottom: '2rem' }}>
-            <Typography variant="h6">Carga tu Archivo o URL</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ marginBottom: '1rem' }}>
-                Puedes cargar un archivo o pegar links para generar contenido para tu red social
+        <Paper elevation={0} sx={{ marginBottom: '2rem', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ padding: '16px 16px 8px 16px' }}>
+                Fuente de contenido
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-                <input
-                    type="file"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                    id="file-upload"
-                    disabled={urls.length > 0}
+            <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                variant="fullWidth"
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+                <Tab
+                    icon={<CloudUploadIcon />}
+                    label="Subir archivo"
+                    iconPosition="start"
                 />
-                <label htmlFor="file-upload">
-                    <Button
-                        variant="contained"
-                        component="span"
-                        sx={{
-                            backgroundColor: '#1976d2',
-                            color: '#fff',
-                            '&:hover': { backgroundColor: '#1565c0' },
-                            '&.Mui-disabled': {
-                                backgroundColor: '#e0e0e0',
-                                color: '#9e9e9e'
-                            }
-                        }}
-                        disabled={urls.length > 0}
-                    >
-                        Seleccionar Archivo
-                    </Button>
-                </label>
-                {selectedFile && (
-                    <Box sx={{ marginLeft: '1rem', display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="body2">
-                            {selectedFile.name}
+                <Tab
+                    icon={<LinkIcon />}
+                    label="Añadir URLs"
+                    iconPosition="start"
+                />
+            </Tabs>
+
+            <Box sx={{ padding: '24px 16px' }}>
+                {tabValue === 0 ? (
+                    // File Upload Tab
+                    <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ marginBottom: '1rem' }}>
+                            Sube un archivo para generar contenido para tu red social
                         </Typography>
-                        <Button
-                            size="small"
-                            onClick={() => {
-                                setSelectedFile(null);
-                                onFileChange(null);
+
+                        {fileError && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                                {fileError}
+                            </Alert>
+                        )}
+
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                border: '2px dashed #1976d2',
+                                borderRadius: '8px',
+                                padding: '30px',
+                                backgroundColor: '#f5f8ff',
+                                cursor: 'pointer'
                             }}
-                            sx={{ minWidth: '24px', ml: 1 }}
+                            component="label"
+                            htmlFor="file-upload"
                         >
-                            X
-                        </Button>
+                            <input
+                                type="file"
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}
+                                id="file-upload"
+                                accept={acceptedFileExtensions}
+                            />
+                            <CloudUploadIcon sx={{ fontSize: 48, color: '#1976d2', mb: 2 }} />
+                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                {selectedFile ? selectedFile.name : 'Arrastra tu archivo aquí o haz clic para seleccionar'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                Soporta archivos PDF, DOCX, TXT, PNG, JPG
+                            </Typography>
+
+                            {selectedFile && (
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedFile(null);
+                                        onFileChange(null);
+                                    }}
+                                    sx={{ mt: 2 }}
+                                >
+                                    Eliminar archivo
+                                </Button>
+                            )}
+                        </Box>
+                    </Box>
+                ) : (
+                    // URL Tab
+                    <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ marginBottom: '1rem' }}>
+                            Añade URLs para analizar y generar contenido
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <TextField
+                                label="URL"
+                                variant="outlined"
+                                value={url}
+                                onChange={handleUrlChange}
+                                onKeyPress={handleKeyPress}
+                                error={!!error}
+                                helperText={error}
+                                sx={{ flexGrow: 1 }}
+                                placeholder="https://ejemplo.com"
+                            />
+                            <Button
+                                onClick={addUrl}
+                                variant="contained"
+                                color="primary"
+                                sx={{ marginLeft: '0.5rem', height: '56px' }}
+                            >
+                                Añadir
+                            </Button>
+                        </Box>
+
+                        {urls.length > 0 && (
+                            <Box sx={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {urls.map((url, index) => (
+                                    <Chip
+                                        key={index}
+                                        label={url}
+                                        onDelete={() => removeUrl(url)}
+                                        color="primary"
+                                        deleteIcon={<CloseIcon />}
+                                        sx={{ maxWidth: '100%', overflow: 'hidden' }}
+                                    />
+                                ))}
+                            </Box>
+                        )}
                     </Box>
                 )}
             </Box>
-
-            <Typography variant="body2" sx={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>
-                O añade URLs para analizar:
-            </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TextField
-                    label="URL"
-                    variant="outlined"
-                    value={url}
-                    onChange={handleUrlChange}
-                    onKeyPress={handleKeyPress}
-                    error={!!error}
-                    helperText={error}
-                    sx={{ flexGrow: 1 }}
-                    disabled={selectedFile !== null}
-                />
-                <Button
-                    onClick={addUrl}
-                    variant="contained"
-                    color="primary"
-                    sx={{ marginLeft: '0.5rem', height: '56px' }}
-                    disabled={selectedFile !== null}
-                >
-                    +
-                </Button>
-            </Box>
-
-            {urls.length > 0 && (
-                <Box sx={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {urls.map((url, index) => (
-                        <Chip
-                            key={index}
-                            label={url}
-                            onDelete={() => removeUrl(url)}
-                            color="primary"
-                            variant="outlined"
-                        />
-                    ))}
-                </Box>
-            )}
-        </div>
+        </Paper>
     );
 };
 
