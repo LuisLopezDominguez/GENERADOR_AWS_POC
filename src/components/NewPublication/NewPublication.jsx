@@ -41,8 +41,35 @@ const NewPublication = () => {
 
     const handleFileChange = (file) => setArchivo(file);
     const handleUrlChange = (urlsList) => setUrls(urlsList);
-    const handleContentTypeSelect = (tipo) => setTipoContenido(tipo);
+    const handleContentTypeSelect = async (tipo) => {
+        // Actualizamos el estado del tipo de contenido
+        setTipoContenido(tipo);
 
+        // Construimos el payload JSON
+        const payload = {
+            content_type: tipo, // Debe ser uno de: IMAGEN, FLYER, PUBLICACION, ARTICULO
+            user_prompt: userPrompt, // Valor del textbox: "¿Qué quieres lograr con este contenido?"
+            // Aquí puedes definir o obtener el knowledge_context de la forma que necesites.
+            // Por ejemplo, podría estar basado en datos ya extraídos o ser un string fijo.
+            knowledge_context: ""
+        };
+
+        try {
+            const response = await fetch(
+                "https://2rmkzczpi6.execute-api.us-east-2.amazonaws.com/dev/generate-content",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                }
+            );
+            const data = await response.json();
+            console.log("Respuesta del API:", data);
+            // Puedes actualizar algún estado o realizar otras acciones con la respuesta si es necesario
+        } catch (error) {
+            console.error("Error al llamar al API:", error);
+        }
+    };
     const getPlaceholderByTipoContenido = (tipo) => {
         switch (tipo) {
             case 'AUDIO':
@@ -200,6 +227,12 @@ const NewPublication = () => {
             setIsLoading(false);
         }
     };
+
+
+
+
+
+
 
     const handleBack = () => setShowGeneratedContent(false);
 
