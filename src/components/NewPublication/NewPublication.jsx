@@ -5,13 +5,18 @@ import TechnicalFields from '../TechnicalFields/TechnicalFields';
 import GeneratedContent from '../GeneratedContent/GeneratedContent';
 import PodcastOptions from '../PodcastOptions/PodcastOptions';
 import {
-    Typography, Button, Paper, CircularProgress, Snackbar, Alert, TextField
+    Typography,
+    Button,
+    Paper,
+    CircularProgress,
+    Snackbar,
+    Alert,
+    TextField
 } from '@mui/material';
 
 import { resizeImageFile } from '../../helpers/processImageFile/resizeImageFile';
 import { convertPdfToImages } from '../../helpers/processImageFile/convertPdfToImages';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-
 
 // Endpoints
 const WEBSCRAPING_API_ENDPOINT = 'https://6z7btlmzah.execute-api.us-east-2.amazonaws.com/api-aws/scrape';
@@ -39,19 +44,20 @@ const NewPublication = () => {
     const [error, setError] = useState(null);
     const [generatedData, setGeneratedData] = useState(null);
 
+    // Estado opcional para almacenar la respuesta del API al cambiar el tipo de contenido
+    const [contentData, setContentData] = useState(null);
+
     const handleFileChange = (file) => setArchivo(file);
     const handleUrlChange = (urlsList) => setUrls(urlsList);
+
+    // Actualiza el tipo de contenido y llama al API para actualizar el JSON a enviar
     const handleContentTypeSelect = async (tipo) => {
-        // Actualizamos el estado del tipo de contenido
         setTipoContenido(tipo);
 
-        // Construimos el payload JSON
         const payload = {
             content_type: tipo, // Debe ser uno de: IMAGEN, FLYER, PUBLICACION, ARTICULO
-            user_prompt: userPrompt, // Valor del textbox: "¿Qué quieres lograr con este contenido?"
-            // Aquí puedes definir o obtener el knowledge_context de la forma que necesites.
-            // Por ejemplo, podría estar basado en datos ya extraídos o ser un string fijo.
-            knowledge_context: ""
+            user_prompt: userPrompt, // Valor del textbox "¿Qué quieres lograr con este contenido?"
+            knowledge_context: "" // Puedes asignar aquí el contexto de conocimiento que requieras
         };
 
         try {
@@ -65,11 +71,12 @@ const NewPublication = () => {
             );
             const data = await response.json();
             console.log("Respuesta del API:", data);
-            // Puedes actualizar algún estado o realizar otras acciones con la respuesta si es necesario
+            setContentData(data); // Guarda la respuesta si la necesitas
         } catch (error) {
             console.error("Error al llamar al API:", error);
         }
     };
+
     const getPlaceholderByTipoContenido = (tipo) => {
         switch (tipo) {
             case 'AUDIO':
@@ -102,7 +109,9 @@ const NewPublication = () => {
             let knowledge = '';
             let processedData = {};
 
+            // Process URLs or file to extract knowledge
             if (urls.length > 0) {
+                // Existing URL processing code
                 const scrapingRequestData = { urls };
                 const response = await fetch(WEBSCRAPING_API_ENDPOINT, {
                     method: 'POST',
@@ -138,19 +147,17 @@ const NewPublication = () => {
                     stats: bodyData.stats
                 };
             } else if (archivo) {
+                // Existing file processing code
                 console.log('Procesando archivo mediante OCR...');
 
-                // 👉 Detectar si es imagen y redimensionar
                 let fileToUpload = archivo;
 
                 if (archivo.type.startsWith('image/')) {
-                    // 🖼️ Imagen → Redimensionar
                     fileToUpload = await resizeImageFile(archivo);
                 } else if (archivo.type === 'application/pdf') {
-                    // 📄 PDF → Convertir a imagen y redimensionar
                     const images = await convertPdfToImages(archivo);
                     if (images.length > 0) {
-                        fileToUpload = images[0]; // Solo primera página por ahora
+                        fileToUpload = images[0];
                     } else {
                         throw new Error('No se pudo convertir el PDF a imagen.');
                     }
@@ -169,7 +176,6 @@ const NewPublication = () => {
                 const ocrData = JSON.parse(responseText);
                 const extractedText = (ocrData.combined || '').trim();
 
-
                 knowledge = extractedText;
 
                 processedData = {
@@ -187,8 +193,40 @@ const NewPublication = () => {
                 };
             }
 
+            // Call the content generation API with the extracted knowledge
+            const contentGenerationPayload = {
+                content_type: tipoContenido,
+                user_prompt: userPrompt,
+                knowledge_context: knowledge || "" // Use the extracted knowledge
+            };
+
+            console.log("Llamando a la API de generación de contenido...");
+            const contentResponse = await fetch(
+                "https://2rmkzczpi6.execute-api.us-east-2.amazonaws.com/dev/generate-content",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(contentGenerationPayload)
+                }
+            );
+            
+            const contentData = await contentResponse.json();
+            console.log("Respuesta de la API de generación:", contentData);
+            
+            // Extract the "resumen" field from the response
+            const generatedContent = contentData.resumen || "";
+            
+            // Merge the content generation response with the processed data
+            processedData = {
+                ...processedData,
+                generatedContent: contentData,
+                // Add the extracted content directly to be used by GeneratedContent component
+                content: generatedContent
+            };
+
             setGeneratedData(processedData);
 
+            // Existing podcast generation code for AUDIO type
             if (tipoContenido === 'AUDIO' && knowledge) {
                 const podcastRequest = {
                     knowledge,
@@ -227,12 +265,6 @@ const NewPublication = () => {
             setIsLoading(false);
         }
     };
-
-
-
-
-
-
 
     const handleBack = () => setShowGeneratedContent(false);
 
@@ -286,12 +318,10 @@ const NewPublication = () => {
 
             <Button
                 variant="contained"
-                sx={{
-                    mt: 2
-                }}
+                sx={{ mt: 2 }}
                 onClick={handleSubmit}
                 disabled={isLoading}
-                size='large'
+                size="large"
                 fullWidth
                 startIcon={<AutoFixHighIcon />}
             >
