@@ -28,7 +28,13 @@ const GeneratedContent = ({ data, onBack }) => {
                 try {
                     const tipo = data.contentType?.toUpperCase();
 
-                    if (tipo === 'AUDIO' && data.podcast) {
+                    // If there's direct content from the API, use it
+                    if (data.content) {
+                        setTitle("Contenido generado");
+                        setContent(data.content);
+                    }
+                    // Otherwise, use the existing logic for different content types
+                    else if (tipo === 'AUDIO' && data.podcast) {
                         setTitle("Podcast generado");
                         setContent(data.podcast.podcast_text || '');
                     }
