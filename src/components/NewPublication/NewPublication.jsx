@@ -38,7 +38,11 @@ const NewPublication = () => {
     const [resolucion, setResolucion] = useState('');
     const [formato, setFormato] = useState('');
     const [aspectRatio, setAspectRatio] = useState('');
-
+    
+    // New state variables for image generation parameters
+    const [cfgScale, setCfgScale] = useState(12);
+    const [steps, setSteps] = useState(73);
+    
     const [showGeneratedContent, setShowGeneratedContent] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -194,9 +198,26 @@ const NewPublication = () => {
             }
 
             // Call the content generation API with the extracted knowledge
+            const getPromptTemplate = (tipo, userInput) => {
+                switch (tipo) {
+                    case 'IMAGEN':
+                        return `Genera una imagen con las siguientes características: ${userInput}. Incluye detalles visuales claros.`;
+                    case 'FLYER':
+                        return `Diseña un flyer atractivo para: ${userInput}. Incluye título llamativo, información clave y elementos visuales.`;
+                    case 'PUBLICACION':
+                        return `Crea una publicación para redes sociales sobre: ${userInput}. Hazla concisa, atractiva y con llamado a la acción.`;
+                    case 'ARTICULO':
+                        return `Redacta un artículo informativo sobre: ${userInput}. Incluye introducción, desarrollo, conclusión y datos relevantes.`;
+                    case 'AUDIO':
+                        return `Genera un guion de podcast sobre: ${userInput}. Estructura con introducción, desarrollo y cierre.`;
+                    default:
+                        return userInput;
+                }
+            };
+
             const contentGenerationPayload = {
                 content_type: tipoContenido,
-                user_prompt: userPrompt,
+                user_prompt: getPromptTemplate(tipoContenido, userPrompt),
                 knowledge_context: knowledge || "" // Use the extracted knowledge
             };
 
@@ -209,13 +230,98 @@ const NewPublication = () => {
                     body: JSON.stringify(contentGenerationPayload)
                 }
             );
-            
+
             const contentData = await contentResponse.json();
             console.log("Respuesta de la API de generación:", contentData);
-            
+
             // Extract the "resumen" field from the response
             const generatedContent = contentData.resumen || "";
-            
+
+            // Llamar al segundo API para generar imagen después de obtener el contenido
+            if (tipoContenido === 'FLYER' || tipoContenido === 'IMAGEN' || tipoContenido === 'PUBLICACION' || tipoContenido === 'ARTICULO') {
+                console.log("Llamando a la API de generación de imágenes...");
+
+                // Crear un prompt para la generación de imágenes basado en el contenido generado
+                const imagePromptTemplate = `Actúa como un diseñador creativo y redactor publicitario experto. A continuación, se te proporcionará una base de conocimientos sobre ${userPrompt}. Con base en esa información, genera el contenido textual ideal para un ${tipoContenido === 'FLYER' ? 'flyer' :
+                    tipoContenido === 'IMAGEN' ? 'imagen' :
+                        tipoContenido === 'PUBLICACION' ? 'post para redes sociales' :
+                            'artículo'
+                    } que sea atractivo, informativo y persuasivo.
+
+Instrucciones:
+1. Lee detenidamente la base de conocimientos.
+2. Extrae los puntos clave que puedan ser útiles para el público objetivo.
+3. Genera un ${tipoContenido === 'FLYER' ? 'flyer' :
+                        tipoContenido === 'IMAGEN' ? 'imagen' :
+                            tipoContenido === 'PUBLICACION' ? 'post para redes sociales' :
+                                'artículo'
+                    } con los siguientes elementos:
+   - Encabezado impactante
+   - Subtítulo breve y claro
+   ${tipoContenido === 'ARTICULO' ?
+                        '- Contenido estructurado con introducción, desarrollo y conclusión' :
+                        '- Beneficios o características clave (máximo 5 bullets)'
+                    }
+   - Llamado a la acción claro (Call to Action)
+   - Datos de contacto o información relevante adicional
+4. El tono debe ser profesional ${tipoContenido === 'PUBLICACION' ? 'y atractivo para redes sociales' : ''}.
+5. No inventes datos. Usa únicamente la información provista.
+
+### Base de conocimientos:
+"""
+${generatedContent}
+"""
+
+### Formato esperado:
+- Encabezado:
+- Subtítulo:
+${tipoContenido === 'ARTICULO' ?
+                        '- Contenido principal:\n   - Introducción\n   - Desarrollo\n   - Conclusión' :
+                        '- Características clave o beneficios:\n   - Punto 1\n   - Punto 2\n   - Punto 3'
+                    }
+- Call to Action:
+- Información adicional:`;
+
+                // Nuevo formato de payload para la API actualizada
+                const imageGenerationPayload = {
+                    text_prompts: [{
+                        text: imagePromptTemplate,
+                        weight: 1
+                    }],
+                    cfg_scale: parseInt(cfgScale) || 12, // Use user-defined value or default to 12
+                    steps: parseInt(steps) || 73, // Use user-defined value or default to 73
+                    seed: Math.floor(Math.random() * 1000000), // Semilla aleatoria
+                    width: 768,
+                    height: 768,
+                    samples: 1
+                };
+
+                try {
+                    const imageResponse = await fetch(
+                        "https://d96p6qvfc7.execute-api.us-east-1.amazonaws.com/dev/LambdaSDXL",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(imageGenerationPayload)
+                        }
+                    );
+
+                    const imageData = await imageResponse.json();
+                    console.log("Respuesta de la API de generación de imágenes:", imageData);
+
+                    // Añadir la respuesta de la generación de imágenes a los datos procesados
+                    processedData = {
+                        ...processedData,
+                        imageGenerationData: imageData,
+                        // Extraer la URL de la imagen para facilitar su uso en el componente GeneratedContent
+                        imageUrl: imageData.image_url || null
+                    };
+                } catch (imageError) {
+                    console.error("Error al generar la imagen:", imageError);
+                    // No interrumpir el flujo principal si falla la generación de imágenes
+                }
+            }
+
             // Merge the content generation response with the processed data
             processedData = {
                 ...processedData,
@@ -313,6 +419,11 @@ const NewPublication = () => {
                     onResolucionChange={(e) => setResolucion(e.target.value)}
                     onFormatoChange={(e) => setFormato(e.target.value)}
                     onAspectRatioChange={(e) => setAspectRatio(e.target.value)}
+                    // New image generation parameters
+                    cfgScale={cfgScale}
+                    steps={steps}
+                    onCfgScaleChange={(e) => setCfgScale(e.target.value)}
+                    onStepsChange={(e) => setSteps(e.target.value)}
                 />
             )}
 
