@@ -187,6 +187,45 @@ const GeneratedContent = ({ data, onBack }) => {
                 />
             </Box>
 
+            {/* Mostrar la imagen generada si está disponible */}
+            {data.imageUrl && (
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>Imagen generada</Typography>
+                    <Box
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            p: 2,
+                            backgroundColor: '#f5f5f5'
+                        }}
+                    >
+                        <img
+                            src={data.imageUrl}
+                            alt="Imagen generada"
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '500px',
+                                objectFit: 'contain',
+                                borderRadius: '4px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                            }}
+                        />
+                    </Box>
+                    <Button
+                        sx={{ mt: 1 }}
+                        variant="outlined"
+                        href={data.imageUrl}
+                        download="imagen_generada.png"
+                        startIcon={<ContentCopyIcon />}
+                    >
+                        Descargar imagen
+                    </Button>
+                </Box>
+            )}
+
             {data.contentType?.toUpperCase() === 'AUDIO' && data.podcast?.podcast_url && (
                 <Box sx={{ mb: 3 }}>
                     <Typography variant="h6" gutterBottom>Reproductor de Podcast</Typography>
