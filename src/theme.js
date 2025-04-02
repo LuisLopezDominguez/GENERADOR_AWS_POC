@@ -3,13 +3,15 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#4caf50', // tu color primario (ej. verde)
+            main: '#1976d2', // tu color primario (ej. azul)
         },
         secondary: {
             main: '#ff9800', // tu color secundario (ej. naranja)
         },
+
         background: {
-            default: '#2e8b57', // Mediterranean blue background
+            // Mediterranean blue background
+            default: '#f0f8ff',
         },
     },
     typography: {
