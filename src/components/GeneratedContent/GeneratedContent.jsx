@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Button, Paper, TextField, Box, CircularProgress, Divider } from '@mui/material';
+import {
+    Typography,
+    Button,
+    Paper,
+    TextField,
+    Box,
+    CircularProgress,
+    Divider
+} from '@mui/material';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
@@ -28,43 +36,27 @@ const GeneratedContent = ({ data, onBack }) => {
                 try {
                     const tipo = data.contentType?.toUpperCase();
 
-                    // If there's direct content from the API, use it
-                    if (data.content) {
-                        setTitle("Contenido generado");
-                        setContent(data.content);
-                    }
-                    // Otherwise, use the existing logic for different content types
-                    else if (tipo === 'AUDIO' && data.podcast) {
+                    if (tipo === 'AUDIO' && data.podcast) {
                         setTitle("Podcast generado");
                         setContent(data.podcast.podcast_text || '');
-                    }
-
-                    // TODO: Lógica futura para tipo IMAGEN
-                    else if (tipo === 'IMAGEN') {
+                    } else if (data.content) {
+                        // Para PUBLICACION, asigna título específico y muestra el contenido generado.
+                        if (tipo === 'PUBLICACION') {
+                            setTitle("Publicación generada");
+                        } else {
+                            setTitle("Contenido generado");
+                        }
+                        setContent(data.content);
+                    } else if (tipo === 'IMAGEN') {
                         setTitle("Imagen generada");
                         setContent("⚠️ Aún no se ha implementado la lógica para mostrar imágenes generadas.");
-                    }
-
-                    // TODO: Lógica futura para tipo FLYER
-                    else if (tipo === 'FLYER') {
+                    } else if (tipo === 'FLYER') {
                         setTitle("Flyer generado");
                         setContent("⚠️ Aún no se ha implementado la lógica para mostrar flyers generados.");
-                    }
-
-                    // TODO: Lógica futura para tipo PUBLICACION
-                    else if (tipo === 'PUBLICACION') {
-                        setTitle("Publicación generada");
-                        setContent("⚠️ Aún no se ha implementado la lógica para mostrar publicaciones.");
-                    }
-
-                    // TODO: Lógica futura para tipo ARTICULO
-                    else if (tipo === 'ARTICULO') {
+                    } else if (tipo === 'ARTICULO') {
                         setTitle("Artículo generado");
                         setContent("⚠️ Aún no se ha implementado la lógica para mostrar artículos generados.");
-                    }
-
-                    // Si no se reconoce el tipo o faltan datos
-                    else {
+                    } else {
                         setTitle("Contenido generado");
                         setContent("No se pudo interpretar correctamente el contenido generado.");
                     }
@@ -91,19 +83,13 @@ const GeneratedContent = ({ data, onBack }) => {
         setSelectedNetwork(network);
     };
 
-    // Function to get the appropriate icon for each social network
     const getSocialNetworkicon = (network) => {
         switch (network) {
-            case 'LinkedIn':
-                return <LinkedInIcon />;
-            case 'Facebook':
-                return <FacebookIcon />;
-            case 'Twitter':
-                return <TwitterIcon />;
-            case 'Instagram':
-                return <InstagramIcon />;
-            default:
-                return null;
+            case 'LinkedIn': return <LinkedInIcon />;
+            case 'Facebook': return <FacebookIcon />;
+            case 'Twitter': return <TwitterIcon />;
+            case 'Instagram': return <InstagramIcon />;
+            default: return null;
         }
     };
 
@@ -142,17 +128,13 @@ const GeneratedContent = ({ data, onBack }) => {
                                 }
                             }}
                             onClick={() => handleNetworkSelect(network.name)}
-                            startIcon={
-                                getSocialNetworkicon(network.name)
-                            }
+                            startIcon={getSocialNetworkicon(network.name)}
                         >
                             {network.name}
                         </Button>
                     ))}
                 </Box>
             </Box>
-
-
 
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h6" gutterBottom>Título</Typography>
@@ -187,7 +169,6 @@ const GeneratedContent = ({ data, onBack }) => {
                 />
             </Box>
 
-            {/* Mostrar la imagen generada si está disponible */}
             {data.imageUrl && (
                 <Box sx={{ mb: 3 }}>
                     <Typography variant="h6" gutterBottom>Imagen generada</Typography>
@@ -243,18 +224,7 @@ const GeneratedContent = ({ data, onBack }) => {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                 <Button variant="outlined" onClick={onBack} startIcon={<ArrowBackIcon />}>Volver</Button>
-                <Button variant="contained"
-                    /*
-                    sx={{
-                        backgroundColor: '#ff9800',
-                        color: '#fff',
-                        '&:hover': { backgroundColor: '#e65100' }
-                    }}
-                    */
-                    endIcon={<SendIcon />}
-                >
-                    Publicar
-                </Button>
+                <Button variant="contained" endIcon={<SendIcon />}>Publicar</Button>
             </Box>
         </Paper>
     );
