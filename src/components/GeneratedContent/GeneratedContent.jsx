@@ -36,6 +36,7 @@ const GeneratedContent = ({ data, onBack }) => {
                 try {
                     const tipo = data.contentType?.toUpperCase();
 
+
                     if (tipo === 'AUDIO' && data.podcast) {
                         setTitle("Podcast generado");
                         setContent(data.podcast.podcast_text || '');
@@ -83,6 +84,7 @@ const GeneratedContent = ({ data, onBack }) => {
         setSelectedNetwork(network);
     };
 
+
     const getSocialNetworkicon = (network) => {
         switch (network) {
             case 'LinkedIn': return <LinkedInIcon />;
@@ -128,6 +130,7 @@ const GeneratedContent = ({ data, onBack }) => {
                                 }
                             }}
                             onClick={() => handleNetworkSelect(network.name)}
+
                             startIcon={getSocialNetworkicon(network.name)}
                         >
                             {network.name}
@@ -168,6 +171,7 @@ const GeneratedContent = ({ data, onBack }) => {
                     onChange={(e) => setContent(e.target.value)}
                 />
             </Box>
+
 
             {data.imageUrl && (
                 <Box sx={{ mb: 3 }}>
@@ -225,6 +229,7 @@ const GeneratedContent = ({ data, onBack }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                 <Button variant="outlined" onClick={onBack} startIcon={<ArrowBackIcon />}>Volver</Button>
                 <Button variant="contained" endIcon={<SendIcon />}>Publicar</Button>
+
             </Box>
         </Paper>
     );

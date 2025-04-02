@@ -241,6 +241,7 @@ const NewPublication = () => {
             if (tipoContenido === 'FLYER' || tipoContenido === 'IMAGEN' || tipoContenido === 'PUBLICACION' || tipoContenido === 'ARTICULO') {
                 console.log("Llamando a la API de generación de imágenes...");
 
+
                 // Crear prompts específicos según el tipo de contenido
                 let imagePromptTemplate = "";
 
@@ -290,13 +291,16 @@ La imagen debe ser profesional, relevante al tema y transmitir credibilidad.
 Debe funcionar como imagen principal de un artículo informativo.
 
 Basado en este contenido:
+
 """
 ${generatedContent}
 """
 
+
 Crea una imagen que represente el tema principal del artículo, con un estilo editorial y profesional.`;
                         break;
                 }
+
 
                 // Nuevo formato de payload para la API actualizada
                 const imageGenerationPayload = {
@@ -304,9 +308,11 @@ Crea una imagen que represente el tema principal del artículo, con un estilo ed
                         text: imagePromptTemplate,
                         weight: 1
                     }],
+
                     cfg_scale: parseInt(cfgScale) || 12,
                     steps: parseInt(steps) || 73,
                     seed: Math.floor(Math.random() * 1000000),
+
                     width: 768,
                     height: 768,
                     samples: 1
@@ -329,6 +335,7 @@ Crea una imagen que represente el tema principal del artículo, con un estilo ed
                     processedData = {
                         ...processedData,
                         imageGenerationData: imageData,
+
                         imageUrl: imageData.image_url || null
                     };
                 } catch (imageError) {
