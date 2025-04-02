@@ -38,11 +38,11 @@ const NewPublication = () => {
     const [resolucion, setResolucion] = useState('');
     const [formato, setFormato] = useState('');
     const [aspectRatio, setAspectRatio] = useState('');
-    
+
     // New state variables for image generation parameters
     const [cfgScale, setCfgScale] = useState(12);
     const [steps, setSteps] = useState(73);
-    
+
     const [showGeneratedContent, setShowGeneratedContent] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -241,46 +241,62 @@ const NewPublication = () => {
             if (tipoContenido === 'FLYER' || tipoContenido === 'IMAGEN' || tipoContenido === 'PUBLICACION' || tipoContenido === 'ARTICULO') {
                 console.log("Llamando a la API de generación de imágenes...");
 
-                // Crear un prompt para la generación de imágenes basado en el contenido generado
-                const imagePromptTemplate = `Actúa como un diseñador creativo y redactor publicitario experto. A continuación, se te proporcionará una base de conocimientos sobre ${userPrompt}. Con base en esa información, genera el contenido textual ideal para un ${tipoContenido === 'FLYER' ? 'flyer' :
-                    tipoContenido === 'IMAGEN' ? 'imagen' :
-                        tipoContenido === 'PUBLICACION' ? 'post para redes sociales' :
-                            'artículo'
-                    } que sea atractivo, informativo y persuasivo.
+                // Crear prompts específicos según el tipo de contenido
+                let imagePromptTemplate = "";
 
-Instrucciones:
-1. Lee detenidamente la base de conocimientos.
-2. Extrae los puntos clave que puedan ser útiles para el público objetivo.
-3. Genera un ${tipoContenido === 'FLYER' ? 'flyer' :
-                        tipoContenido === 'IMAGEN' ? 'imagen' :
-                            tipoContenido === 'PUBLICACION' ? 'post para redes sociales' :
-                                'artículo'
-                    } con los siguientes elementos:
-   - Encabezado impactante
-   - Subtítulo breve y claro
-   ${tipoContenido === 'ARTICULO' ?
-                        '- Contenido estructurado con introducción, desarrollo y conclusión' :
-                        '- Beneficios o características clave (máximo 5 bullets)'
-                    }
-   - Llamado a la acción claro (Call to Action)
-   - Datos de contacto o información relevante adicional
-4. El tono debe ser profesional ${tipoContenido === 'PUBLICACION' ? 'y atractivo para redes sociales' : ''}.
-5. No inventes datos. Usa únicamente la información provista.
+                switch (tipoContenido) {
+                    case 'FLYER':
+                        imagePromptTemplate = `Genera una imagen para un flyer profesional y atractivo sobre: "${userPrompt}". 
+La imagen debe ser visualmente impactante, con colores llamativos y elementos gráficos que comuniquen claramente el mensaje principal.
+Debe transmitir profesionalismo pero ser atractiva visualmente.
 
-### Base de conocimientos:
+Utiliza esta información como base de conocimiento:
 """
 ${generatedContent}
 """
 
-### Formato esperado:
-- Encabezado:
-- Subtítulo:
-${tipoContenido === 'ARTICULO' ?
-                        '- Contenido principal:\n   - Introducción\n   - Desarrollo\n   - Conclusión' :
-                        '- Características clave o beneficios:\n   - Punto 1\n   - Punto 2\n   - Punto 3'
-                    }
-- Call to Action:
-- Información adicional:`;
+Crea una imagen que capture la esencia de un flyer publicitario, con espacio para título, subtítulos y puntos clave.`;
+                        break;
+
+                    case 'IMAGEN':
+                        imagePromptTemplate = `Crea una imagen de alta calidad visual que represente: "${userPrompt}".
+La imagen debe ser detallada, con buena composición y elementos visuales claros.
+Debe ser una imagen profesional que comunique el mensaje de forma efectiva.
+
+Basado en esta información:
+"""
+${generatedContent}
+"""
+
+Genera una imagen que capture perfectamente el concepto principal, con colores apropiados y elementos visuales relevantes.`;
+                        break;
+
+                    case 'PUBLICACION':
+                        imagePromptTemplate = `Diseña una imagen para redes sociales sobre: "${userPrompt}".
+La imagen debe ser atractiva, moderna y optimizada para plataformas sociales.
+Debe captar la atención rápidamente y comunicar el mensaje de forma concisa.
+
+Utilizando esta información como contexto:
+"""
+${generatedContent}
+"""
+
+Crea una imagen que funcione bien en redes sociales, con elementos visuales llamativos y espacio para texto breve.`;
+                        break;
+
+                    case 'ARTICULO':
+                        imagePromptTemplate = `Genera una imagen de cabecera para un artículo sobre: "${userPrompt}".
+La imagen debe ser profesional, relevante al tema y transmitir credibilidad.
+Debe funcionar como imagen principal de un artículo informativo.
+
+Basado en este contenido:
+"""
+${generatedContent}
+"""
+
+Crea una imagen que represente el tema principal del artículo, con un estilo editorial y profesional.`;
+                        break;
+                }
 
                 // Nuevo formato de payload para la API actualizada
                 const imageGenerationPayload = {
@@ -288,9 +304,9 @@ ${tipoContenido === 'ARTICULO' ?
                         text: imagePromptTemplate,
                         weight: 1
                     }],
-                    cfg_scale: parseInt(cfgScale) || 12, // Use user-defined value or default to 12
-                    steps: parseInt(steps) || 73, // Use user-defined value or default to 73
-                    seed: Math.floor(Math.random() * 1000000), // Semilla aleatoria
+                    cfg_scale: parseInt(cfgScale) || 12,
+                    steps: parseInt(steps) || 73,
+                    seed: Math.floor(Math.random() * 1000000),
                     width: 768,
                     height: 768,
                     samples: 1
@@ -313,7 +329,6 @@ ${tipoContenido === 'ARTICULO' ?
                     processedData = {
                         ...processedData,
                         imageGenerationData: imageData,
-                        // Extraer la URL de la imagen para facilitar su uso en el componente GeneratedContent
                         imageUrl: imageData.image_url || null
                     };
                 } catch (imageError) {
