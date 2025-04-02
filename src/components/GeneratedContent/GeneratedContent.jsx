@@ -6,7 +6,9 @@ import {
     TextField,
     Box,
     CircularProgress,
-    Divider
+    Divider,
+    Snackbar,
+    Alert
 } from '@mui/material';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -20,14 +22,19 @@ const GeneratedContent = ({ data, onBack }) => {
     const [title, setTitle] = useState('Contenido generado');
     const [content, setContent] = useState('');
     const [copied, setCopied] = useState(false);
-    const [selectedNetwork, setSelectedNetwork] = useState('');
+    const [selectedNetworks, setSelectedNetworks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [publishStatus, setPublishStatus] = useState({
+        isPublishing: false,
+        success: false,
+        error: null
+    });
 
     const socialNetworks = [
-        { name: 'LinkedIn', color: '#0077B5' },
-        { name: 'Facebook', color: '#1877F2' },
-        { name: 'Twitter', color: '#1DA1F2' },
-        { name: 'Instagram', color: '#E1306C' }
+        { name: 'LinkedIn', color: '#0077B5', enabled: true },
+        { name: 'Facebook', color: '#1877F2', enabled: true },
+        { name: 'Twitter', color: '#1DA1F2', enabled: false },
+        { name: 'Instagram', color: '#E1306C', enabled: false }
     ];
 
     useEffect(() => {
@@ -36,12 +43,10 @@ const GeneratedContent = ({ data, onBack }) => {
                 try {
                     const tipo = data.contentType?.toUpperCase();
 
-
                     if (tipo === 'AUDIO' && data.podcast) {
                         setTitle("Podcast generado");
                         setContent(data.podcast.podcast_text || '');
                     } else if (data.content) {
-                        // Para PUBLICACION, asigna título específico y muestra el contenido generado.
                         if (tipo === 'PUBLICACION') {
                             setTitle("Publicación generada");
                         } else {
@@ -81,9 +86,139 @@ const GeneratedContent = ({ data, onBack }) => {
     };
 
     const handleNetworkSelect = (network) => {
-        setSelectedNetwork(network);
+        const networkData = socialNetworks.find(n => n.name === network);
+        if (!networkData?.enabled) return;
+
+        setSelectedNetworks(prev => {
+            if (prev.includes(network)) {
+                return prev.filter(n => n !== network);
+            } else {
+                return [...prev, network];
+            }
+        });
     };
 
+    const handlePublish = async () => {
+        if (selectedNetworks.length === 0) {
+            setPublishStatus({
+                isPublishing: false,
+                success: false,
+                error: "Por favor, selecciona al menos una red social"
+            });
+            return;
+        }
+
+        setPublishStatus({
+            isPublishing: true,
+            success: false,
+            error: null
+        });
+
+        try {
+            const publishPromises = [];
+
+            if (selectedNetworks.includes('Facebook')) {
+                const facebookPromise = publishToFacebook();
+                publishPromises.push(facebookPromise);
+            }
+
+            if (selectedNetworks.includes('LinkedIn')) {
+                const linkedinPromise = publishToLinkedIn();
+                publishPromises.push(linkedinPromise);
+            }
+
+            const results = await Promise.allSettled(publishPromises);
+
+            const errors = results
+                .filter(result => result.status === 'rejected')
+                .map(result => result.reason);
+
+            if (errors.length > 0) {
+                setPublishStatus({
+                    isPublishing: false,
+                    success: false,
+                    error: `Error al publicar: ${errors.join(', ')}`
+                });
+            } else {
+                setPublishStatus({
+                    isPublishing: false,
+                    success: true,
+                    error: null
+                });
+
+                setTimeout(() => {
+                    setPublishStatus(prev => ({ ...prev, success: false }));
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('Error al publicar:', error);
+            setPublishStatus({
+                isPublishing: false,
+                success: false,
+                error: error.message || 'Error al publicar en redes sociales'
+            });
+        }
+    };
+
+    const publishToFacebook = async () => {
+        const FACEBOOK_API_ENDPOINT = 'https://lk03opdrt8.execute-api.us-east-2.amazonaws.com/dev/generate-facebook-post';
+
+        const contentType = data.contentType?.toUpperCase();
+        let payload = {};
+
+        if (contentType === 'IMAGEN' || contentType === 'FLYER') {
+            payload = {
+                image_url: data.imageUrl
+            };
+        } else {
+            payload = {
+                text: content,
+                image_url: data.imageUrl
+            };
+        }
+
+        const response = await fetch(FACEBOOK_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error al publicar en Facebook: ${response.statusText}`);
+        }
+
+        return await response.json();
+    };
+
+    const publishToLinkedIn = async () => {
+        const LINKEDIN_API_ENDPOINT = 'https://17g3e6mvea.execute-api.us-east-2.amazonaws.com/dev/generate-linkedin-post';
+
+        const contentType = data.contentType?.toUpperCase();
+        let payload = {};
+
+        if (contentType === 'IMAGEN' || contentType === 'FLYER') {
+            payload = {
+                image_url: data.imageUrl
+            };
+        } else {
+            payload = {
+                text: content,
+                image_url: data.imageUrl
+            };
+        }
+
+        const response = await fetch(LINKEDIN_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error al publicar en LinkedIn: ${response.statusText}`);
+        }
+
+        return await response.json();
+    };
 
     const getSocialNetworkicon = (network) => {
         switch (network) {
@@ -118,20 +253,27 @@ const GeneratedContent = ({ data, onBack }) => {
                     {socialNetworks.map((network) => (
                         <Button
                             key={network.name}
-                            variant={selectedNetwork === network.name ? "contained" : "outlined"}
+                            variant={selectedNetworks.includes(network.name) ? "contained" : "outlined"}
                             sx={{
-                                backgroundColor: selectedNetwork === network.name ? network.color : 'transparent',
-                                color: selectedNetwork === network.name ? '#fff' : network.color,
+                                backgroundColor: selectedNetworks.includes(network.name) ? network.color : 'transparent',
+                                color: selectedNetworks.includes(network.name) ? '#fff' : network.color,
                                 borderColor: network.color,
+                                opacity: network.enabled ? 1 : 0.5,
                                 '&:hover': {
-                                    backgroundColor: network.color,
-                                    color: '#fff',
-                                    opacity: 0.9
+                                    backgroundColor: network.enabled ?
+                                        (selectedNetworks.includes(network.name) ? network.color : 'rgba(0,0,0,0.04)') :
+                                        'transparent',
+                                    color: network.enabled ?
+                                        (selectedNetworks.includes(network.name) ? '#fff' : network.color) :
+                                        network.color,
+                                    opacity: network.enabled ? 0.9 : 0.5,
+                                    cursor: network.enabled ? 'pointer' : 'not-allowed'
                                 }
                             }}
                             onClick={() => handleNetworkSelect(network.name)}
-
                             startIcon={getSocialNetworkicon(network.name)}
+                            disabled={!network.enabled}
+                            title={network.enabled ? '' : 'Integración no disponible'}
                         >
                             {network.name}
                         </Button>
@@ -171,7 +313,6 @@ const GeneratedContent = ({ data, onBack }) => {
                     onChange={(e) => setContent(e.target.value)}
                 />
             </Box>
-
 
             {data.imageUrl && (
                 <Box sx={{ mb: 3 }}>
@@ -228,9 +369,29 @@ const GeneratedContent = ({ data, onBack }) => {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                 <Button variant="outlined" onClick={onBack} startIcon={<ArrowBackIcon />}>Volver</Button>
-                <Button variant="contained" endIcon={<SendIcon />}>Publicar</Button>
-
+                <Button
+                    variant="contained"
+                    endIcon={<SendIcon />}
+                    onClick={handlePublish}
+                    disabled={publishStatus.isPublishing || selectedNetworks.length === 0}
+                >
+                    {publishStatus.isPublishing ? <CircularProgress size={24} color="inherit" /> : 'Publicar'}
+                </Button>
             </Box>
+
+            <Snackbar
+                open={!!publishStatus.error || publishStatus.success}
+                autoHideDuration={6000}
+                onClose={() => setPublishStatus(prev => ({ ...prev, error: null, success: false }))}
+            >
+                <Alert
+                    onClose={() => setPublishStatus(prev => ({ ...prev, error: null, success: false }))}
+                    severity={publishStatus.success ? "success" : "error"}
+                    sx={{ width: '100%' }}
+                >
+                    {publishStatus.success ? 'Contenido publicado exitosamente' : publishStatus.error}
+                </Alert>
+            </Snackbar>
         </Paper>
     );
 };
