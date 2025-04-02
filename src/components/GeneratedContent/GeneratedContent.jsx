@@ -373,7 +373,7 @@ const GeneratedContent = ({ data, onBack }) => {
                     variant="contained"
                     endIcon={<SendIcon />}
                     onClick={handlePublish}
-                    disabled={publishStatus.isPublishing || selectedNetworks.length === 0}
+                    disabled={publishStatus.isPublishing || selectedNetworks.length === 0 || data.contentType?.toUpperCase() === 'AUDIO'}
                 >
                     {publishStatus.isPublishing ? <CircularProgress size={24} color="inherit" /> : 'Publicar'}
                 </Button>
